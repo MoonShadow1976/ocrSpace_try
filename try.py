@@ -231,28 +231,35 @@ def ocr_results_to_dict(ocr_results):
     if ocr_results:
         first_result = ocr_results[0]
         if first_result['error'] is None:
-            lines = first_result['text'].split('\n')
+            lines = first_result['text'].split('\t')
+            # lines = [row.split('\t') for row in words] # 再对每一行按 \t 分隔
             for line in lines:
-                line = line.strip()
-                
+                # 文本预处理：去除多余的空白符
+                line_clean = re.sub(r'\s+', ' ', line).strip()  # 使用 \s+ 匹配所有空白符，并替换为单个空格
+                # line_clean = line.strip()
+
                 # 角色名提取
                 if not final_result["角色信息"].get("角色名"):
-                    name_match = patterns["name"].search(line)
+                    name_match = patterns["name"].search(line_clean)
                     if name_match:
+                        print(f" [鸣潮][dc卡片识别] 识别出角色名:{name_match.group()}")
+                        if not re.match(r'^[\u4e00-\u9fa5]+$', name_match.group()):
+                            print(f" [鸣潮][dc卡片识别] 识别出英文角色名:{name_match.group()}")
+                            return False, final_result
                         final_result["角色信息"]["角色名"] = cc.convert(name_match.group())
-                
+
                 # 等级提取
-                level_match = patterns["level"].search(line)
+                level_match = patterns["level"].search(line_clean)
                 if level_match and not final_result["角色信息"].get("等级"):
                     final_result["角色信息"]["等级"] = int(level_match.group(2))
-                
+
                 # 玩家名称
-                player_match = patterns["player_info"].search(line)
+                player_match = patterns["player_info"].search(line_clean)
                 if player_match:
                     final_result["用户信息"]["玩家名称"] = player_match.group(1)
-                
+
                 # UID提取
-                uid_match = patterns["uid_info"].search(line)
+                uid_match = patterns["uid_info"].search(line_clean)
                 if uid_match:
                     final_result["用户信息"]["UID"] = uid_match.group(1)
 
@@ -350,8 +357,8 @@ async def main():
     #         print("-" * 30)
 
     # 识别数据处理部分
-    result = [{'text': 'Carlotta\tLV.90\t\r\nPlayer ID:lnnocent\t\r\nUID:700590032\t\r\n', 'error': None}, {'text': 'LV.7/10\t\r\n', 'error': None}, {'text': 'LV.9/10\t\r\n', 'error': None}, {'text': 'LV.10/10\t\r\n', 'error': None}, {'text': 'LV.10/10\t\r\n', 'error': None}, {'text': 'LV.5/10\t\r\n', 'error': None}, {'text': 'Crit. Rate\t\r\n#22%\t\r\nATK\t150\t\r\nCrit. DMG\t12.6%\t\r\nResonance Skill DMG\t7.9%\t\r\nPpTus\t7.9%\t\r\nEnergy Regen\t8.4%\t\r\nCrit.Rate\t8.7%\t\r\n', 'error': None}, {'text': 'Glacio DMG Bonus\t\r\n30%\t\r\nATK\t100\t\r\nATK\t8.6%\t\r\nCrit. Rate\t7.5%\t\r\nResonance Skill DMG\t10.1%6\t\r\nBonus\t\r\nHeavy Attack DMG Bonus\t7.9%\t\r\nCrit.DMG\t21%6\t\r\n', 'error': None}, {'text': 'Glacio DMG Bonus\t\r\n30%\t\r\nATK\t100\t\r\nDEF\t60\t\r\nCrit. DMG\t18.6%\t\r\nResonance Liberation\t8.6%\t\r\nDMG onus\t\r\nCrit. Rate\t9.9%\t\r\nHeavy Attack DMG Bonus\t10.9%6\t\r\n', 'error': None}, {'text': 'ATK\t\r\n×18%\t\r\nHP\t2280.\t\r\nDEF\t60\t\r\nResonance Skill DMG\t9.4%\t\r\nERR MG\t17.4%\t\r\nCrit. Rate\t7.5%\t\r\nHP\t9.4%\t\r\n', 'error': None}, {'text': 'ATK\t\r\n×18%\t\r\nHP\t2280\t\r\nHeavy Attack DMG Bonus\t10.9%6\t\r\nCrit. Rate\t9.3%\t\r\nCrit. DMG\t15%\t\r\nATK\t9.4%6\t\r\nHP\t4770\t\r\n', 'error': None}, {'text': 'The Last Dance\t\r\nLV.90\t\r\nAscension Level\t\r\n', 'error': None}]
-    result_a = [{'text': '今汐\tLV.90\t\r\n玩家名稱：567\t\r\n特徵碼：800607969\t\r\n', 'error': None}, {'text': 'LV.6/10\t\r\n', 'error': None}, {'text': 'LV.10/10\t\r\n', 'error': None}, {'text': 'LV.10/10\t\r\n', 'error': None}, {'text': 'LV.10/10\t\r\n', 'error': None}, {'text': 'LV.7/10\t\r\n', 'error': None}, {'text': '暴擊傷害\t\r\n器44%\t\r\n攻擊\t150\t\r\n暴擊\t6.9%\t\r\n生命\t510\t\r\n暴擊傷害\t18.6%\t\r\n共鳴解放傷害加成\t8.6%\t\r\n共鳴效率\t9.2%\t\r\n', 'error': None}, {'text': '暴擊\t\r\n22%\t\r\n攻擊\t150\t\r\n暴擊\t9.3%\t\r\n攻擊\t10.1%\t\r\n重擊傷害加成\t9.4%\t\r\n暴擊傷害\t12.6%\t\r\n攻擊\t40\t\r\n', 'error': None}, {'text': '攻擊\t\r\n×18%\t\r\n生命\t2280\t\r\n暴擊傷害\t12.6%\t\r\n共鳴技能傷害加成\t10.9%\t\r\n共鳴解放傷害加成\t10.1%\t\r\n防禦\t9%\t\r\n生命\t9.4%\t\r\n', 'error': None}, {'text': '攻擊\t\r\n×18%\t\r\n生命\t2280\t\r\n暴擊\t8.7%\t\r\n暴擊傷害\t15%\t\r\n生命\t8.6%\t\r\n共鳴技能傷害加成\t10.1%\t\r\n攻擊\t40\t\r\n', 'error': None}, {'text': '攻擊\t\r\n×18%\t\r\n生命\t2280\t\r\n暴擊\t10.5%\t\r\n防禦\t50\t\r\n攻擊\t8.6%\t\r\n暴擊傷害\t15%\t\r\n防禦\t11.9%\t\r\n', 'error': None}, {'text': '時和歲稔\t\r\nLV.90\t\r\n突破等級\t\r\n', 'error': None}]
+    result = [{'text': '◎\tCarlotta\tLV.90\t\r\nPlayer ID:lnnocent\t\r\nUID:700590032\t\r\n', 'error': None}, {'text': 'LV.7/10\t\r\n', 'error': None}, {'text': 'LV.9/10\t\r\n', 'error': None}, {'text': 'LV.10/10\t\r\n', 'error': None}, {'text': 'LV.10/10\t\r\n', 'error': None}, {'text': 'LV.5/10\t\r\n', 'error': None}, {'text': 'Crit. Rate\t\r\n#22%\t\r\nATK\t150\t\r\nCrit. DMG\t12.6%\t\r\nResonance Skill DMG\t7.9%\t\r\nPpTus\t7.9%\t\r\nEnergy Regen\t8.4%\t\r\nCrit.Rate\t8.7%\t\r\n', 'error': None}, {'text': 'Glacio DMG Bonus\t\r\n30%\t\r\nATK\t100\t\r\nATK\t8.6%\t\r\nCrit. Rate\t7.5%\t\r\nResonance Skill DMG\t10.1%6\t\r\nBonus\t\r\nHeavy Attack DMG Bonus\t7.9%\t\r\nCrit.DMG\t21%6\t\r\n', 'error': None}, {'text': 'Glacio DMG Bonus\t\r\n30%\t\r\nATK\t100\t\r\nDEF\t60\t\r\nCrit. DMG\t18.6%\t\r\nResonance Liberation\t8.6%\t\r\nDMG onus\t\r\nCrit. Rate\t9.9%\t\r\nHeavy Attack DMG Bonus\t10.9%6\t\r\n', 'error': None}, {'text': 'ATK\t\r\n×18%\t\r\nHP\t2280.\t\r\nDEF\t60\t\r\nResonance Skill DMG\t9.4%\t\r\nERR MG\t17.4%\t\r\nCrit. Rate\t7.5%\t\r\nHP\t9.4%\t\r\n', 'error': None}, {'text': 'ATK\t\r\n×18%\t\r\nHP\t2280\t\r\nHeavy Attack DMG Bonus\t10.9%6\t\r\nCrit. Rate\t9.3%\t\r\nCrit. DMG\t15%\t\r\nATK\t9.4%6\t\r\nHP\t4770\t\r\n', 'error': None}, {'text': 'The Last Dance\t\r\nLV.90\t\r\nAscension Level\t\r\n', 'error': None}]
+    result_a = [{'text': '◎\t洛可可\tLV.90\t\r\n玩家名稱：橘子汽水\t\r\n特徵碼：711745893\t\r\n', 'error': None}, {'text': 'LV.6/10\t\r\n', 'error': None}, {'text': 'LV.6/10\t\r\n', 'error': None}, {'text': 'LV.9/10\t\r\n', 'error': None}, {'text': 'LV.10/10\t\r\n', 'error': None}, {'text': 'LV.6/10\t\r\n', 'error': None}, {'text': '暴擊\t\r\n*22%\t\r\n攻擊\t150\t\r\n攻擊\t40\t\r\n攻擊\t9.4%\t\r\n生命\t11.6%\t\r\n暴擊\t6.9%\t\r\n暴擊傷害\t21%\t\r\n', 'error': None}, {'text': '暴擊傷害\t\r\n器44%\t\r\n攻擊\t150\t\r\n攻擊\t9.4%\t\r\n共鳴效率\t11.6%\t\r\n暴擊\t6.3%\t\r\n暴擊傷害\t12.6%\t\r\n攻擊\t50\t\r\n', 'error': None}, {'text': '攻擊\t\r\n×18%\t\r\n生命\t2280\t\r\n防禦\t12.8%\t\r\n暴擊\t7.5%\t\r\n暴擊傷害\t17.4%\t\r\n攻擊\t8.6%\t\r\n攻擊\t40\t\r\n', 'error': None}, {'text': '攻擊\t\r\n×18%\t\r\n生命\t2280\t\r\n暴擊傷害\t18.6%\t\r\n共鳴效率\t8.4%\t\r\n防禦\t60\t\r\n攻擊\t50\t\r\n暴擊\t7.5%\t\r\n', 'error': None}, {'text': '攻擊\t\r\n×18%\t\r\n生命\t2280\t\r\n攻擊\t9.4%\t\r\n普攻傷害加成\t8.6%\t\r\n暴擊傷害\t21%\t\r\n防禦\t50\t\r\n暴擎\t6.3%\t\r\n', 'error': None}, {'text': '悲喜劇\t\r\nLV.90\t\r\n突破等級\t\r\n', 'error': None}]
     ocr_results_to_dict(result)
 
 
